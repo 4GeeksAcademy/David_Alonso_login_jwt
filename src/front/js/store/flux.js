@@ -23,12 +23,12 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			logout: () => {
 				console.log('logout desde flux')
-				localStorage.removeItem("token");
+				sessionStorage.removeItem("token");
 				setStore({ auth: false })
 			},
 			handleLogout: () => {
 				console.log('logout desde flux')
-				localStorage.removeItem("token");
+				sessionStorage.removeItem("token");
 				setStore({ auth: false })
 			},
 			login: (email, password) => {
@@ -55,7 +55,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 					})
 
 					.then(data => {
-						localStorage.setItem("token", data.access_token);
+						sessionStorage.setItem("token", data.access_token);
 					});
 
 
