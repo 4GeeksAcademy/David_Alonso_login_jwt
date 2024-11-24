@@ -13,7 +13,7 @@ from flask_jwt_extended import JWTManager
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
-CORS(api)
+CORS(api, resources={r"/*": {"origins": "*"}})  # Permitir todas las solicitudes de origen
 
 
 # @api.route('/hello', methods=['POST', 'GET'])
@@ -31,8 +31,9 @@ def handle_hello2():
     response_body = {
         "message": "ESte es mi segundo hello"
     }
-
-    return jsonify(response_body), 200
+    response = jsonify(response_body)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response, 200
 
 # Create a route to authenticate your users and return JWTs. The
 # create_ s_token() function is used to actually generate the JWT.
@@ -50,26 +51,66 @@ def login():
         return jsonify({"msg": "Email o usuario incorrecto"}), 401
 
     access_token = create_access_token(identity=email)
-    return jsonify(access_token=access_token)
+    response = jsonify(access_token=access_token)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
 
 @api.route("/signup", methods=["POST"])
 def signup():
-
     body = request.get_json()
-    print(body)
+    email = body.get("email")
+    password = body.get("password")
+    first_Name = body.get("first_Name")
+    last_Name = body.get("last_Name")
 
-    user = User.query.filter_by(email=body["email"]).first()
-    print(user)
+    if not email or not password or not first_Name or not last_Name:
+        return jsonify({"msg": "Faltan datos"}), 400
+
+    user = User.query.filter_by(email=email).first()
     
-    if user == None:
-        user = User(email=body["email"], password=body["password"], is_active=False)
+    if user is None:
+        user = User(email=email, password=password, first_Name=first_Name, last_Name=last_Name, is_active=True)
         db.session.add(user)
         db.session.commit()
         response_body = {
             "msg": "Usuario creado"
         }
-        return jsonify(response_body), 200  # Indentación corregida
+        response = jsonify(response_body)
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response, 200 
     else:
-        return jsonify({"msg": "Ya tenemos fichado un cliente con ese corrreo"}), 401
+        response = jsonify({"msg": "Ya tenemos fichado un cliente con ese correo"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response, 401
 
   
+@api.route('/user/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify(message="Usuario no válido"), 404
+
+    try:
+        db.session.delete(user)
+        db.session.commit()   
+        return jsonify(message="Usuario eliminado"), 200
+    except Exception as e:
+        db.session.rollback() 
+        return jsonify(message="Error, usuario no eliminado", error=str(e)), 500
+
+@api.route("/privatepage", methods=["GET"])
+@jwt_required()
+def protected():
+    current_user = get_jwt_identity()
+    if current_user:
+        response = jsonify(logged_in_as=current_user)
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response, 200
+    else:
+        response = jsonify({"msg": "Usuario no autenticado"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response, 401
+
+
+if __name__ == "__main__":
+    api.run()

@@ -31,60 +31,122 @@ const getState = ({ getStore, getActions, setStore }) => {
 				sessionStorage.removeItem("token");
 				setStore({ auth: false })
 			},
-			login: (email, password) => {
-				console.log('login desde flux')
+			login: async (email, password) => {
 				const requestOptions = {
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(
-						{
-							"email": email,
-							"password": password
-						}
-					)
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						"email": email,
+						"password": password
+					})
 				};
 
-				fetch(process.env.BACKEND_URL + 'api/login', requestOptions)
-					.then(response => {
-						console.log(response.status)
-						if (response.status === 200) {
-							setStore({ auth: true })
+				try {
+					const response = await fetch(process.env.BACKEND_URL + "/api/login", requestOptions);
 
-						}
-						return response.json()
-					})
+					if (response.status !== 200) {
+						const errorData = await response.json();
+						return { success: false, message: errorData.msg || "Usuario o contraseña incorrecta" };
+					}
+					const data = await response.json();
+					localStorage.setItem("token", data.access_token);
+					setStore({ auth: true });
 
-					.then(data => {
-						sessionStorage.setItem("token", data.access_token);
-					});
+					return { success: true };
 
-
+				} catch (error) {
+					console.error('Error during login:', error);
+					return { success: false, message: "Error conectando al servidor" };
+				}
 			},
+
+			logout: () => {
+				setStore({ auth: false });
+				localStorage.removeItem("token");
+			},
+
+			signup: async (email, password, first_Name, last_Name) => {
+				const requestOptions = {
+					method: 'POST',
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ email, password, first_Name, last_Name })
+				};
+
+				try {
+					const response = await fetch(process.env.BACKEND_URL + "/api/signup", requestOptions);
+
+					if (response.status !== 200) {
+						const errorData = await response.json();
+						return { success: false, message: errorData.msg || "Error de registro" };
+					}
+
+					const data = await response.json();
+					console.log("Registro exitoso:", data.msg);
+					return { success: true };
+
+				} catch (error) {
+					console.error("Error de signup:", error);
+					return { success: false, message: "Error conectando al servidor" };
+				}
+			},
+			verifyToken: async () => {
+				const token = localStorage.getItem("token");
+
+				if (!token) {
+					setStore({ auth: false });
+					return false;
+				}
+
+				const requestOptions = {
+					method: 'GET',
+					headers: {
+						"Content-Type": "application/json",
+						"Authorization": `Bearer ${token}`
+					}
+				};
+
+				try {
+					const response = await fetch(process.env.BACKEND_URL + "/api/privatepage", requestOptions);
+
+					if (response.status === 200) {
+						setStore({ auth: true });
+						return true;
+					} else {
+						localStorage.removeItem("token");
+						setStore({ auth: false });
+						return false;
+					}
+				} catch (error) {
+					console.error('Error verifying token:', error);
+					setStore({ auth: false });
+					return false;
+				}
+			},
+
 
 			getMessage: async () => {
 				try {
-					// fetching data from the backend
+
 					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
 					const data = await resp.json()
 					setStore({ message: data.message })
-					// don't forget to return something, that is how the async resolves
+
 					return data;
 				} catch (error) {
 					console.log("Error loading message from backend", error)
 				}
 			},
 			changeColor: (index, color) => {
-				//get the store
+
 				const store = getStore();
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
+
 				const demo = store.demo.map((elm, i) => {
 					if (i === index) elm.background = color;
 					return elm;
 				});
 
-				//reset the global store
+
 				setStore({ demo: demo });
 			}
 		}

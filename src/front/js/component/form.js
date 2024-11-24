@@ -1,52 +1,95 @@
-import React, { useState, useContext } from "react";
-import { Context } from "../store/appContext";
-import { Navigate } from "react-router-dom";
+import React, { useState, useContext } from 'react';
+import { Context } from '../store/appContext';
+import { Navigate, Link } from 'react-router-dom';
+import "../../styles/form.css";
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 
-const Form = () => {
+function FormData() {
     const { store, actions } = useContext(Context);
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    // const [first_Name, setFirst_Name] = useState('');
+    // const [last_Name, setLast_Name] = useState('');
+    const [error, setError] = useState('');
+    
+    async function sendData(e) {
+        e.preventDefault();
+        setError('');
 
-    function sendData(e) {
-        e.preventDefault()
-        console.log('send data')
-        console.log(email, password)
-        actions.login(email, password)
+        const response = await actions.login(email, password);
 
-
-
-
+        if (!response.success) {
+            setError(response.message);
+        }
     }
+
     return (
         <>
+            {store.auth === true ? <Navigate to="/login" /> :
+                <div className="d-flex justify-content-center align-items-center flex-column">
+                    <Form className="form-container" onSubmit={sendData}>
+                        {/* <Form.Group className="mb-3" controlId="formBasicEmail">
+                            <Form.Label className="futuristic-label">Nombre</Form.Label>
+                            <Form.Control
+                                className="futuristic-input"
+                                value={first_Name}
+                                onChange={(e) => setFirst_Name(e.target.value)}
+                                type="text" 
+                                placeholder="Introduce tu nombre"
+                            />
+                        </Form.Group>
 
+                        <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Label className="futuristic-label">Apellidos</Form.Label>
+                            <Form.Control
+                                className="futuristic-input"
+                                value={last_Name}
+                                onChange={(e) => setLast_Name(e.target.value)}
+                                type="text" 
+                                placeholder="Introduce tus apellidos"
+                            />
+                        </Form.Group> */}
+                        <Form.Group className="mb-3" controlId="formBasicEmail">
+                            <Form.Label className="futuristic-label">Email</Form.Label>
+                            <Form.Control
+                                className="futuristic-input"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                type="email"
+                                placeholder="email"
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Label className="futuristic-label">Contraseña</Form.Label>
+                            <Form.Control
+                                className="futuristic-input"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                type="password" 
+                                placeholder="Password"
+                            />
+                        </Form.Group>
 
-            {store.auth === true ? <Navigate to="/demo" /> :
+                        {error && (
+                            <div className="alert alert-danger" role="alert">
+                                {error}
+                            </div>
+                        )}
 
-                <div>
-                    <form className="w-50 mx-auto" onSubmit={sendData}>
-                        <div className="mb-3">
-                            <label htmlFor="exampleInputEmail1" className="form-label">Email address</label>
-                            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="form-control" id="exampleInputEmail1" />
-
-
+                        <div className="d-flex justify-content-between">
+                            <Button className="custom-button" type="submit">
+                                Login
+                            </Button>
+                            <Link to="/signup">
+                                <Button className="custom-button ms-2">Registrarme</Button>
+                            </Link>
                         </div>
-                        <div className="mb-3">
-                            <label htmlFor="exampleInputPassword1" className="form-label">Password</label>
-                            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="form-control" id="exampleInputPassword1" />
-                            
-                        </div>
-                        <button type="submit" className="btn btn-primary">Login</button>
-
-                    </form>
+                    </Form>
                 </div>
-
-
             }
-
-             </>
-    )
-
-
+        </>
+    );
 }
-            export default Form;
+
+export default FormData;
